@@ -1,0 +1,5 @@
+debug
+__debug_bin
+main
+*.test
+go.sum
