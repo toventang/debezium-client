@@ -1,6 +1,10 @@
 package schema
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"log"
+)
 
 type ValueMapping struct {
 	Schema  ValueSchema
@@ -22,10 +26,16 @@ type ValuePayload struct {
 	TsMs   int
 }
 
-func ParseValues(bytes []byte) (values ValueMapping, err error) {
-	err = json.Unmarshal(bytes, &values)
+func ParseValues(b []byte) (ValueMapping, error) {
+	var m ValueMapping
+
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.UseNumber()
+	err := decoder.Decode(&m)
 	if err != nil {
-		return
+		log.Println("json decode error: ", string(b))
+		return m, err
 	}
-	return
+
+	return m, nil
 }

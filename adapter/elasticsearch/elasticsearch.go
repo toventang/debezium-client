@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	elastic "github.com/elastic/go-elasticsearch/v7"
@@ -42,14 +43,10 @@ func (es elasticSearch) Write(row schema.Row) error {
 	length := len(row.FieldItems)
 	builder.WriteString(`{`)
 	for i, f := range row.FieldItems {
-		b, err := json.Marshal(f.Value)
-		if err != nil {
-			return err
-		}
 		builder.WriteString(`"`)
 		builder.WriteString(f.Field)
 		builder.WriteString(`":`)
-		builder.WriteString(string(b))
+		builder.WriteString(getValue(f))
 		if i < length-1 {
 			builder.WriteString(",")
 		}
@@ -87,6 +84,7 @@ func (es elasticSearch) Delete(row schema.Row) error {
 			docID = fmt.Sprint(f.Value)
 		}
 	}
+
 	req := esapi.DeleteRequest{
 		Index:      indexName,
 		DocumentID: docID,
@@ -98,7 +96,7 @@ func (es elasticSearch) Delete(row schema.Row) error {
 	}
 	defer res.Body.Close()
 
-	if res.IsError() {
+	if res.IsError() && res.StatusCode != http.StatusNotFound {
 		return fmt.Errorf(res.String())
 	}
 
@@ -107,4 +105,17 @@ func (es elasticSearch) Delete(row schema.Row) error {
 
 func (es elasticSearch) Close() error {
 	return nil
+}
+
+func getValue(f schema.FieldItem) string {
+	b, err := json.Marshal(f.Value)
+	if err != nil {
+		return ""
+	}
+
+	switch f.Type {
+	case "int64":
+		return fmt.Sprintf(`"%s"`, string(b))
+	}
+	return string(b)
 }

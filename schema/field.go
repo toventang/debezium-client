@@ -55,15 +55,33 @@ func ParsePrimaryKeys(bytes []byte) (FieldItems, error) {
 	return fields, nil
 }
 
-func GetFieldValues(keyFields FieldItems, fields map[string]interface{}) FieldItems {
+// GetFieldValues 获取所有字段及最新的值
+func GetFieldValues(keys FieldItems, m ValueMapping) FieldItems {
 	var fieldItems FieldItems
-	for k, v := range fields {
-		f := FieldItem{
-			Field:      k,
-			Value:      v,
-			PrimaryKey: keyFields.ContainsKey(k),
-		}
-		fieldItems = append(fieldItems, f)
+	var pos string
+
+	fields := make(map[string]interface{})
+	switch m.Payload.Op {
+	case CREATE, UPDATE:
+		fields = m.Payload.After
+		pos = "after"
+	case DELETE:
+		fields = m.Payload.Before
+		pos = "before"
 	}
+
+	if len(m.Schema.Fields) > 0 {
+		for _, s := range m.Schema.Fields {
+			if s.Field == pos {
+				for _, f := range s.Fields {
+					f.Value = fields[f.Field]
+					f.PrimaryKey = keys.ContainsKey(f.Field)
+
+					fieldItems = append(fieldItems, f)
+				}
+			}
+		}
+	}
+
 	return fieldItems
 }

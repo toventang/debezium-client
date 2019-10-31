@@ -16,21 +16,23 @@ func (c Consumer) handle(msg *sarama.ConsumerMessage) error {
 		return err
 	}
 
+	if len(msg.Value) == 0 {
+		return nil
+	}
 	s, err := schema.ParseValues(msg.Value)
 	if err != nil {
 		return err
 	}
 
 	row := schema.Row{
-		Schema:    s.Payload.Source.Schema,
-		TableName: s.Payload.Source.Table,
+		Schema:     s.Payload.Source.Schema,
+		TableName:  s.Payload.Source.Table,
+		FieldItems: schema.GetFieldValues(keyFields, s),
 	}
 	switch s.Payload.Op {
 	case schema.CREATE, schema.UPDATE:
-		row.FieldItems = schema.GetFieldValues(keyFields, s.Payload.After)
 		return c.connector.Write(row)
 	case schema.DELETE:
-		row.FieldItems = schema.GetFieldValues(keyFields, s.Payload.Before)
 		return c.connector.Delete(row)
 	}
 

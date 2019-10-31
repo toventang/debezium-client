@@ -31,7 +31,7 @@ func NewClient(ko KafkaOptions, bo adapter.Options) (*Client, error) {
 			panic(err)
 		}
 	default:
-		panic("ConnectorType must be specified")
+		panic(`"ConnectorType" must be specified`)
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -50,12 +50,19 @@ func NewClient(ko KafkaOptions, bo adapter.Options) (*Client, error) {
 
 func (d *Client) Start(ctx context.Context) error {
 	for {
-		d.consumer.Consume(ctx, d.topics, &Consumer{d.connector})
+		err := make(chan error, 1)
+		go func() {
+			err <- d.consumer.Consume(ctx, d.topics, &Consumer{d.connector})
+		}()
 
 		select {
 		case <-ctx.Done():
 			d.consumer.Close()
 			return ctx.Err()
+		case e := <-err:
+			if e != nil {
+				return e
+			}
 		}
 	}
 }
