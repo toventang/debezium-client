@@ -14,7 +14,10 @@ const (
 )
 
 type Connector interface {
-	Write(row schema.Row) error
+	Init() error
+	Create(row schema.Row) error
+	Update(row schema.Row) error
 	Delete(row schema.Row) error
+	Exists(row schema.Row) bool
 	Close() error
 }

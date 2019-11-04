@@ -42,6 +42,7 @@ func (fi FieldItems) ContainsKey(key string) bool {
 	return false
 }
 
+// ParsePrimaryKeys returns primary key, but not set values
 func ParsePrimaryKeys(bytes []byte) (FieldItems, error) {
 	m := new(KeyMapping)
 	err := json.Unmarshal(bytes, m)
@@ -50,36 +51,42 @@ func ParsePrimaryKeys(bytes []byte) (FieldItems, error) {
 	}
 	var fields []FieldItem
 	for _, f := range m.Schema.Fields {
+		f.PrimaryKey = true
 		fields = append(fields, f)
 	}
 	return fields, nil
 }
 
-// GetFieldValues 获取所有字段及最新的值
-func GetFieldValues(keys FieldItems, m ValueMapping) FieldItems {
+func GetPKValues(pk FieldItems, m ValueMapping) FieldItems {
 	var fieldItems FieldItems
-	var pos string
+	for _, s := range m.Schema.Fields {
+		if s.Field == "before" {
+			for _, f := range s.Fields {
+				f.Value = m.Payload.Before[f.Field]
+				f.PrimaryKey = pk.ContainsKey(f.Field)
 
-	fields := make(map[string]interface{})
-	switch m.Payload.Op {
-	case CREATE, UPDATE:
-		fields = m.Payload.After
-		pos = "after"
-	case DELETE:
-		fields = m.Payload.Before
-		pos = "before"
+				fieldItems = append(fieldItems, f)
+			}
+			break
+		}
 	}
+	return fieldItems
+}
+
+// GetFieldValues returns fields and the new values
+func GetFieldValues(pk FieldItems, m ValueMapping, onlyChangedFields bool) FieldItems {
+	var fieldItems FieldItems
 
 	if len(m.Schema.Fields) > 0 {
-		for _, s := range m.Schema.Fields {
-			if s.Field == pos {
-				for _, f := range s.Fields {
-					f.Value = fields[f.Field]
-					f.PrimaryKey = keys.ContainsKey(f.Field)
-
-					fieldItems = append(fieldItems, f)
-				}
+		switch m.Payload.Op {
+		case CREATE, UPDATE:
+			if onlyChangedFields {
+				fieldItems = GetUpdateEventValues(pk, m)
+			} else {
+				fieldItems = GetCreateEventValues(pk, m)
 			}
+		case DELETE:
+			fieldItems = GetPKValues(pk, m)
 		}
 	}
 
