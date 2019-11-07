@@ -7,11 +7,24 @@ import (
 type ConnectorType int8
 
 const (
-	MYSQL    ConnectorType = 1
-	POSTGRES               = 2
-	MSSQL                  = 3
-	ELASTIC                = 4
+	MYSQL    ConnectorType = 0
+	POSTGRES               = 1
+	MSSQL                  = 2
+	ELASTIC                = 3
 )
+
+func ParseConnectorType(t string) ConnectorType {
+	switch t {
+	case "mysql":
+		return MYSQL
+	case "postgres":
+		return POSTGRES
+	case "mssql":
+		return MSSQL
+	default:
+		return ELASTIC
+	}
+}
 
 type Connector interface {
 	Init() error

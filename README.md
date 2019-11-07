@@ -14,22 +14,31 @@
 
 在 [examples](./examples) 中已有 ElasticSearch 的示例，只需提供源数据（基于 Kafka）地址和目标数据（NOSQL、RDB）地址，即可自动捕获源数据的变更项，并写入目标数据存储。
 
-1、安装 [docker](./examples/docker-compose.yaml)
+1、安装依赖的 docker 镜像 [docker](./docker-compose.yaml)
 
 ```console
 docker-compose up
 ```
 
-2、向 debezium 写入配置
+2、向 debezium connect 写入配置
 
 ```console
 curl -i -X POST -H "Accept:application/json" -H  "Content-Type:application/json" http://192.168.50.199:8083/connectors/ -d @register-postgres.json
 ```
 
-3、运行程序
+3、编译源码，运行 client 的 docker 镜像
 
 ```console
-go run ./elasticsearch/main.go
+make build && make image
+```
+
+4、运行 debezium-client 的 docker 容器
+
+```console
+docker run --name debeclient -ti debeclient -KAFKA_ADDRESS=192.168.50.199:9092 \
+          -KAFKA_GROUPID=cdc.catalogs.subscriber \
+          -KAFKA_TOPICS=catalogdbs.public.catalogs,catalogdbs.public.templates \
+          -DST_TYPE=elasticsearch -DST_ADDRESS=http://192.168.50.138:9200 -DST_TIMEOUT=5
 ```
 
 ## Debezium

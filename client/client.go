@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/toventang/debezium-client/adapter"
 	"github.com/toventang/debezium-client/adapter/elasticsearch"
@@ -24,7 +25,7 @@ func NewClient(opts Options) (*Client, error) {
 			panic(err)
 		}
 	default:
-		panic(fmt.Sprintf(`the connector "%v" is not supported`, opts.AdapterOptions.ConnectorType))
+		panic(fmt.Sprintf(`the connector "%v" is not supported now`, opts.AdapterOptions.ConnectorType))
 	}
 	err = c.Init()
 	if err != nil {
@@ -51,6 +52,7 @@ func (d *Client) Start(ctx context.Context) error {
 		go func() {
 			err <- d.subscriber.Subscribe(ctx)
 		}()
+		log.Println("debezium client was started")
 
 		select {
 		case <-ctx.Done():

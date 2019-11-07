@@ -12,21 +12,24 @@ import (
 )
 
 func main() {
-	var kafkaAddress, groupID, topics string
-	kSet := flag.NewFlagSet("kafka", flag.ContinueOnError)
-	kSet.StringVar(&kafkaAddress, "address", "192.168.50.199:9092", "kafka addresses")
-	kSet.StringVar(&groupID, "group", "cdc.catalogs.subscriber", "group id")
-	kSet.StringVar(&topics, "topics", "catalogdbs.public.catalogs,catalogdbs.public.templates", "topics")
+	var (
+		kafkaAddress, groupID, topics                 string
+		dstType, dstAddress, dstUsername, dstPassword string
+		timeout                                       int
+	)
 
-	var esAddress, username, password string
-	var timeout int
+	flag.StringVar(&kafkaAddress, "KAFKA_ADDRESS", "192.168.50.199:9092", "kafka addresses")
+	flag.StringVar(&groupID, "KAFKA_GROUPID", "cdc.catalogs.subscriber", "group id")
+	flag.StringVar(&topics, "KAFKA_TOPICS", "catalogdbs.public.catalogs,catalogdbs.public.templates", "topics")
+
+	flag.StringVar(&dstType, "DST_TYPE", "elasticsearch", "destination database type, support only 'elasticsearch' now")
+	flag.StringVar(&dstAddress, "DST_ADDRESS", "http://192.168.50.138:9200", "destination database addresses")
+	flag.IntVar(&timeout, "DST_USER", 5, "user auth")
+	flag.StringVar(&dstUsername, "DST_PASSWORD", "", "user auth")
+	flag.StringVar(&dstPassword, "DST_TIMEOUT", "", "R/W timeout")
+	flag.Parse()
+
 	var tables []string
-	esSet := flag.NewFlagSet("elastic", flag.ContinueOnError)
-	esSet.StringVar(&esAddress, "address", "http://192.168.50.138:9200", "elasticsearch addresses")
-	esSet.IntVar(&timeout, "timeout", 5000, "")
-	esSet.StringVar(&username, "user", "", "user auth")
-	esSet.StringVar(&password, "pwd", "", "password")
-
 	t := strings.Split(topics, ",")
 	for _, tn := range t {
 		s := strings.SplitAfterN(tn, ".", 2)
@@ -41,12 +44,12 @@ func main() {
 			Topics:    strings.Split(topics, ","),
 		},
 		AdapterOptions: adapter.Options{
-			ConnectorType: adapter.ELASTIC,
-			Addresses:     strings.Split(esAddress, ","),
+			ConnectorType: adapter.ParseConnectorType(dstType),
+			Addresses:     strings.Split(dstAddress, ","),
 			Timeout:       time.Duration(timeout) * time.Second,
 			Tables:        tables,
-			Username:      username,
-			Password:      password,
+			Username:      dstUsername,
+			Password:      dstPassword,
 		},
 	}
 	cli, err := client.NewClient(opts)
