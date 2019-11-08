@@ -24,9 +24,9 @@ func main() {
 
 	flag.StringVar(&dstType, "DST_TYPE", "elasticsearch", "destination database type, support only 'elasticsearch' now")
 	flag.StringVar(&dstAddress, "DST_ADDRESS", "http://192.168.50.138:9200", "destination database addresses")
-	flag.IntVar(&timeout, "DST_USER", 5, "user auth")
-	flag.StringVar(&dstUsername, "DST_PASSWORD", "", "user auth")
-	flag.StringVar(&dstPassword, "DST_TIMEOUT", "", "R/W timeout")
+	flag.IntVar(&timeout, "DST_TIMEOUT", 5, "R/W timeout")
+	flag.StringVar(&dstUsername, "DST_USER", "", "user auth")
+	flag.StringVar(&dstPassword, "DST_PASSWORD", "", "user auth")
 	flag.Parse()
 
 	var tables []string

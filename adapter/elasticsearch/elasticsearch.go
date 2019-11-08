@@ -1,10 +1,8 @@
 package elasticsearch
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -63,71 +61,21 @@ func (es elasticSearch) Init() error {
 	return nil
 }
 
-func (es elasticSearch) tableExists(name string) (bool, error) {
-	rsp, err := es.client.Indices.Exists([]string{name})
-	if err != nil {
-		return false, err
-	}
-	defer rsp.Body.Close()
-
-	return rsp.StatusCode == http.StatusOK, nil
-}
-
-func (es elasticSearch) createTable(name string) error {
-	rsp, err := es.client.Indices.Create(name)
-	if err != nil {
-		return err
-	}
-	defer rsp.Body.Close()
-
-	if rsp.IsError() {
-		return errors.New(rsp.String())
-	}
-	if rsp.StatusCode != http.StatusOK {
-		return fmt.Errorf("create index error, index: %s", name)
-	}
-	return nil
-}
-
 func (es elasticSearch) Create(row schema.Row) error {
-	indexName, docID, body, err := getRequestParams(row)
-	if err != nil {
-		return nil
-	}
-
-	req := esapi.CreateRequest{
-		Index:      indexName,
-		DocumentID: docID,
-		Body:       body,
-		Timeout:    es.options.Timeout,
-	}
-
-	ctx, cancel := adapter.Context(es.options.Timeout)
-	defer cancel()
-
-	rsp, err := req.Do(ctx, es.client)
-	if err != nil {
-		return fmt.Errorf("has error occured when Write: %s", err)
-	}
-	defer rsp.Body.Close()
-
-	if rsp.IsError() {
-		return errors.New(rsp.String())
-	}
-
-	return nil
+	return es.Update(row)
 }
 
 func (es elasticSearch) Update(row schema.Row) error {
-	indexName, docID, body, err := getRequestParams(row)
+	indexName, docID, body, err := buildUpsertScript(row)
 	if err != nil {
 		return nil
 	}
+	log.Println("upsert script: ", body)
 
 	req := esapi.UpdateRequest{
 		Index:      indexName,
 		DocumentID: docID,
-		Body:       body,
+		Body:       strings.NewReader(body),
 		Timeout:    es.options.Timeout,
 	}
 
@@ -136,12 +84,12 @@ func (es elasticSearch) Update(row schema.Row) error {
 
 	rsp, err := req.Do(ctx, es.client)
 	if err != nil {
-		return fmt.Errorf("has error occured when Write: %s", err)
+		return fmt.Errorf("has error occured when Write to Elasticsearch: %s", err)
 	}
 	defer rsp.Body.Close()
 
 	if rsp.IsError() {
-		log.Println("Elasticsearch error: ", rsp.String())
+		log.Println("elasticsearch internal error: ", rsp.String())
 		return errors.New(rsp.String())
 	}
 
@@ -180,66 +128,35 @@ func (es elasticSearch) Delete(row schema.Row) error {
 }
 
 func (es elasticSearch) Exists(row schema.Row) bool {
-	var docID string
-	for _, f := range row.FieldItems {
-		if f.PrimaryKey {
-			docID = fmt.Sprint(f.Value)
-			break
-		}
-	}
-	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)
-
-	rsp, err := es.client.Exists(indexName, docID)
-	if err != nil {
-		return false
-	}
-	defer rsp.Body.Close()
-
-	return !rsp.IsError() && rsp.StatusCode == http.StatusOK
+	return false
 }
 
 func (es elasticSearch) Close() error {
 	return nil
 }
 
-func getValue(f schema.FieldItem) string {
-	b, err := json.Marshal(f.Value)
+func (es elasticSearch) tableExists(name string) (bool, error) {
+	rsp, err := es.client.Indices.Exists([]string{name})
 	if err != nil {
-		return ""
+		return false, err
 	}
+	defer rsp.Body.Close()
 
-	switch f.Type {
-	case "int64":
-		return fmt.Sprintf(`"%s"`, string(b))
-	}
-	return string(b)
+	return rsp.StatusCode == http.StatusOK, nil
 }
 
-func getRequestParams(row schema.Row) (string, string, io.Reader, error) {
-	var builder strings.Builder
-	var docID string
-	length := len(row.FieldItems)
-	if length == 0 {
-		return "", "", nil, NoFieldEffect
+func (es elasticSearch) createTable(name string) error {
+	rsp, err := es.client.Indices.Create(name)
+	if err != nil {
+		return err
 	}
+	defer rsp.Body.Close()
 
-	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)
-	builder.WriteString(`{"doc":{`)
-	for i, f := range row.FieldItems {
-		if f.PrimaryKey && docID == "" {
-			docID = fmt.Sprint(f.Value)
-		}
-		v := getValue(f)
-		builder.Grow(len(v) + len(f.Field) + 4)
-		builder.WriteString(`"`)
-		builder.WriteString(f.Field)
-		builder.WriteString(`":`)
-		builder.WriteString(v)
-		if i < length-1 {
-			builder.WriteString(",")
-		}
+	if rsp.IsError() {
+		return errors.New(rsp.String())
 	}
-	builder.WriteString(`}}`)
-
-	return indexName, docID, strings.NewReader(builder.String()), nil
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("create index error, index: %s", name)
+	}
+	return nil
 }

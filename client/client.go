@@ -47,12 +47,12 @@ func NewClient(opts Options) (*Client, error) {
 }
 
 func (d *Client) Start(ctx context.Context) error {
+	log.Println("debezium client was started")
 	for {
 		err := make(chan error, 1)
 		go func() {
 			err <- d.subscriber.Subscribe(ctx)
 		}()
-		log.Println("debezium client was started")
 
 		select {
 		case <-ctx.Done():
