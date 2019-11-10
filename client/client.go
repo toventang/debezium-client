@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/toventang/debezium-client/adapter"
 	"github.com/toventang/debezium-client/adapter/elasticsearch"
+	"github.com/toventang/debezium-client/adapter/postgres"
 	sub "github.com/toventang/debezium-client/subscriber"
 )
 
@@ -24,8 +24,13 @@ func NewClient(opts Options) (*Client, error) {
 		if err != nil {
 			panic(err)
 		}
+	case adapter.POSTGRES:
+		c, err = postgres.NewPostgres(opts.AdapterOptions)
+		if err != nil {
+			panic(err)
+		}
 	default:
-		panic(fmt.Sprintf(`the connector "%v" is not supported now`, opts.AdapterOptions.ConnectorType))
+		panic(`the ConnectorType is not supported now`)
 	}
 	err = c.Init()
 	if err != nil {

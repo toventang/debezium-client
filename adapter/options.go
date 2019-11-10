@@ -8,8 +8,9 @@ type Options struct {
 	ConnectorType      ConnectorType
 	Addresses          []string
 	Timeout            time.Duration
-	Tables             []string
+	Database           string
 	Username, Password string
+	Tables             []string
 }
 
 type Option func(*Options)
@@ -31,6 +32,12 @@ func WithConnectorType(t ConnectorType) Option {
 func WithAddresses(addresses []string) Option {
 	return func(opt *Options) {
 		opt.Addresses = addresses
+	}
+}
+
+func WithDatabase(dbName string) Option {
+	return func(opt *Options) {
+		opt.Database = dbName
 	}
 }
 

@@ -7,6 +7,7 @@ require (
 	github.com/elastic/go-elasticsearch v0.0.0
 	github.com/elastic/go-elasticsearch/v7 v7.4.1
 	github.com/elastic/go-elasticsearch/v8 v8.0.0-20191022142200-8efb73c32e7f // indirect
+	github.com/lib/pq v1.2.0
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 )
 

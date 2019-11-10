@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/toventang/debezium-client/adapter"
 	"github.com/toventang/debezium-client/schema"
 )
 
@@ -13,7 +14,7 @@ func buildUpsertScript(row schema.Row) (string, string, string, error) {
 	var doc strings.Builder
 	l := len(row.FieldItems)
 	if l == 0 {
-		return "", "", "", NoFieldEffect
+		return "", "", "", adapter.ErrNoRows
 	}
 
 	var docID string
@@ -24,13 +25,7 @@ func buildUpsertScript(row schema.Row) (string, string, string, error) {
 		}
 
 		v := getValue(f)
-		sv := v
-		if sv[:1] == `"` {
-			sv = "'" + sv[1:]
-		}
-		if sv[len(sv)-1:] == `"` {
-			sv = sv[:len(sv)-1] + "'"
-		}
+		sv := adapter.ToSQLValue(v)
 		lf := len(f.Field)
 		source.Grow(14 + lf + len(sv))
 		source.WriteString("ctx._source.")
@@ -71,7 +66,7 @@ func buildRequestParams(row schema.Row) (string, string, string, error) {
 	var docID string
 	length := len(row.FieldItems)
 	if length == 0 {
-		return "", "", "", NoFieldEffect
+		return "", "", "", adapter.ErrNoRows
 	}
 
 	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)

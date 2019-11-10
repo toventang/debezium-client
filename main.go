@@ -13,20 +13,21 @@ import (
 
 func main() {
 	var (
-		kafkaAddress, groupID, topics                 string
-		dstType, dstAddress, dstUsername, dstPassword string
-		timeout                                       int
+		kafkaAddress, groupID, topics                              string
+		dstType, dstAddress, dstDatabase, dstUsername, dstPassword string
+		timeout                                                    int
 	)
 
 	flag.StringVar(&kafkaAddress, "KAFKA_ADDRESS", "192.168.50.199:9092", "kafka addresses")
 	flag.StringVar(&groupID, "KAFKA_GROUPID", "cdc.catalogs.subscriber", "group id")
 	flag.StringVar(&topics, "KAFKA_TOPICS", "catalogdbs.public.catalogs,catalogdbs.public.templates", "topics")
 
-	flag.StringVar(&dstType, "DST_TYPE", "elasticsearch", "destination database type, support only 'elasticsearch' now")
-	flag.StringVar(&dstAddress, "DST_ADDRESS", "http://192.168.50.138:9200", "destination database addresses")
+	flag.StringVar(&dstType, "DST_TYPE", "postgres", "destination database type, support only 'elasticsearch' now")
+	flag.StringVar(&dstAddress, "DST_ADDRESS", "192.168.50.199:5432", "destination database addresses")
+	flag.StringVar(&dstDatabase, "DST_DATABASE", "postgres", "database name")
 	flag.IntVar(&timeout, "DST_TIMEOUT", 5, "R/W timeout")
-	flag.StringVar(&dstUsername, "DST_USER", "", "user auth")
-	flag.StringVar(&dstPassword, "DST_PASSWORD", "", "user auth")
+	flag.StringVar(&dstUsername, "DST_USER", "ecs", "user auth")
+	flag.StringVar(&dstPassword, "DST_PASSWORD", "123456", "user auth")
 	flag.Parse()
 
 	var tables []string
@@ -46,6 +47,7 @@ func main() {
 		AdapterOptions: adapter.Options{
 			ConnectorType: adapter.ParseConnectorType(dstType),
 			Addresses:     strings.Split(dstAddress, ","),
+			Database:      dstDatabase,
 			Timeout:       time.Duration(timeout) * time.Second,
 			Tables:        tables,
 			Username:      dstUsername,
