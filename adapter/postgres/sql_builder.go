@@ -42,51 +42,6 @@ func prepareInsertSQL(row schema.Row) string {
 	return builder.String()
 }
 
-func prepareUpdateSQL(row schema.Row) string {
-	var builder, values, where strings.Builder
-	hasCond := false
-
-	l := len(row.FieldItems)
-	for i, f := range row.FieldItems {
-		v := adapter.GetValue(f)
-		if f.PrimaryKey {
-			if hasCond {
-				where.WriteString(" AND ")
-			}
-			hasCond = true
-			where.WriteString(`"`)
-			where.WriteString(f.Field)
-			where.WriteString(`"=`)
-			where.WriteString(v)
-		} else {
-			values.WriteString(`"`)
-			values.WriteString(f.Field)
-			values.WriteString(`"=`)
-			values.WriteString(v)
-
-			if i < l-1 {
-				values.WriteString(",")
-			}
-		}
-	}
-
-	tn := getTableName(row)
-	builder.Grow(len(tn) + len(values.String()) + len(where.String()) + 20)
-	builder.WriteString("UPDATE ")
-	builder.WriteString(tn)
-	builder.WriteString(" SET ")
-	builder.WriteString(values.String())
-
-	w := where.String()
-	if len(w) > 0 {
-		builder.WriteString(" WHERE ")
-		builder.WriteString(w)
-	}
-
-	log.Println("update sql: ", builder.String())
-	return builder.String()
-}
-
 func prepareUpsertSQL(row schema.Row) string {
 	insertSQL := prepareInsertSQL(row)
 	var upsertSQL strings.Builder
