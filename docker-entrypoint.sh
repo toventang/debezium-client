@@ -2,4 +2,4 @@
 
 echo "args: $@"
 
-exec /usr/local/bin/debeclient "$@ &"
+exec /usr/local/bin/debeclient "$@"

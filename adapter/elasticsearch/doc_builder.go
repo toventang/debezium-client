@@ -25,7 +25,7 @@ func buildUpsertScript(row schema.Row) (string, string, string, error) {
 		}
 
 		v := getValue(f)
-		sv := adapter.ToSQLValue(v)
+		sv := adapter.EscapeQuotes(v)
 		lf := len(f.Field)
 		source.Grow(14 + lf + len(sv))
 		source.WriteString("ctx._source.")

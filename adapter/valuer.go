@@ -8,6 +8,19 @@ import (
 	"github.com/toventang/debezium-client/schema"
 )
 
+// EscapeQuotes double quotes value escape to single quotes
+func EscapeQuotes(v string) string {
+	dqv := v
+	if dqv[:1] == `"` {
+		dqv = "'" + dqv[1:]
+	}
+	if dqv[len(dqv)-1:] == `"` {
+		dqv = dqv[:len(dqv)-1] + "'"
+	}
+
+	return dqv
+}
+
 // ToSQLValue convert string values to sql values
 func ToSQLValue(v string) string {
 	l := len(v)
@@ -20,19 +33,11 @@ func ToSQLValue(v string) string {
 		v = strings.ReplaceAll(v, `\"`, `"`)
 	}
 
-	// double quotes value escape to single quotes
-	if v[:1] == `"` {
-		v = "'" + v[1:]
-	}
-	if v[len(v)-1:] == `"` {
-		v = v[:len(v)-1] + "'"
-	}
-
-	return v
+	return EscapeQuotes(v)
 }
 
-// GetValue returns a field string value
-func GetValue(f schema.FieldItem) string {
+// GetSQLValue returns a field string value
+func GetSQLValue(f schema.FieldItem) string {
 	b, err := json.Marshal(f.Value)
 	if err != nil {
 		return ""
@@ -43,13 +48,13 @@ func GetValue(f schema.FieldItem) string {
 	return v
 }
 
-// GetPKField returns a primary key and values
+// GetPKFieldValue returns a primary key and values
 func GetPKFieldValue(row schema.Row) (string, string) {
 	var pk, val string
 	for _, f := range row.FieldItems {
 		if f.PrimaryKey && len(pk) == 0 {
 			pk = f.Field
-			val = GetValue(f)
+			val = GetSQLValue(f)
 			break
 		}
 	}

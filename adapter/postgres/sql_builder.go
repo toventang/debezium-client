@@ -20,7 +20,7 @@ func prepareInsertSQL(row schema.Row) string {
 		fields.WriteString(f.Field)
 		fields.WriteString(`"`)
 
-		v := adapter.GetValue(f)
+		v := adapter.GetSQLValue(f)
 		values.WriteString(v)
 		if i < l-1 {
 			fields.WriteString(",")
@@ -49,7 +49,7 @@ func prepareUpsertSQL(row schema.Row) string {
 	l := len(row.FieldItems)
 	upsertSQL.WriteString(" UPDATE SET ")
 	for i, f := range row.FieldItems {
-		v := adapter.GetValue(f)
+		v := adapter.GetSQLValue(f)
 		if f.PrimaryKey && len(pk) == 0 {
 			pk = f.Field
 			continue
