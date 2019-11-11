@@ -28,7 +28,7 @@ func prepareInsertSQL(row schema.Row) string {
 		}
 	}
 
-	tn := fmt.Sprintf(`"%s"."%s"`, row.Schema, row.TableName)
+	tn := getTableName(row)
 	builder.Grow(len(tn) + len(fields.String()) + len(values.String()) + 23)
 	builder.WriteString("INSERT INTO ")
 	builder.WriteString(tn)
@@ -70,7 +70,7 @@ func prepareUpdateSQL(row schema.Row) string {
 		}
 	}
 
-	tn := fmt.Sprintf(`"%s"."%s"`, row.Schema, row.TableName)
+	tn := getTableName(row)
 	builder.Grow(len(tn) + len(values.String()) + len(where.String()) + 20)
 	builder.WriteString("UPDATE ")
 	builder.WriteString(tn)
@@ -112,4 +112,8 @@ func prepareUpsertSQL(row schema.Row) string {
 
 	log.Println("upsert sql: ", sql)
 	return sql
+}
+
+func getTableName(row schema.Row) string {
+	return fmt.Sprintf(`"%s"."%s"`, row.Schema, row.TableName)
 }

@@ -3,6 +3,8 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/lib/pq"
 
@@ -47,7 +49,22 @@ func (pg Postgres) Update(row schema.Row) error {
 }
 
 func (pg Postgres) Delete(row schema.Row) error {
-	return nil
+	var sql strings.Builder
+	tn := getTableName(row)
+	pk, v := adapter.GetPKFieldValue(row)
+
+	sql.Grow(len(tn) + len(pk) + 22)
+	sql.WriteString("DELETE FROM ")
+	sql.WriteString(tn)
+	sql.WriteString(` WHERE "`)
+	sql.WriteString(pk)
+	sql.WriteString(`"=`)
+	sql.WriteString(v)
+
+	s := sql.String()
+
+	log.Println("delete sql: ", s)
+	return pg.exec(s)
 }
 
 func (pg Postgres) Exists(row schema.Row) bool {
