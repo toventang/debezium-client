@@ -26,10 +26,10 @@ docker-compose up
 curl -i -X POST -H "Accept:application/json" -H  "Content-Type:application/json" http://192.168.50.199:8083/connectors/ -d @register-postgres.json
 ```
 
-3、编译源码，运行 client 的 docker 镜像
+3、编译源码，运行 client 的 docker 镜像，参数 OS 表示编译目标平台
 
 ```console
-make build && make image
+make OS=darwin build && make image
 ```
 
 4、运行 debezium-client 的 docker 容器
