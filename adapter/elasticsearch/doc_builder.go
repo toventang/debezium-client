@@ -18,7 +18,6 @@ func buildUpsertScript(row schema.Row) (string, string, string, error) {
 	}
 
 	var docID string
-	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)
 	for i, f := range row.FieldItems {
 		if f.PrimaryKey && docID == "" {
 			docID = fmt.Sprint(f.Value)
@@ -58,6 +57,7 @@ func buildUpsertScript(row schema.Row) (string, string, string, error) {
 	builder.WriteString(d)
 	builder.WriteString("}}")
 
+	indexName := getIndexName(row)
 	return indexName, docID, builder.String(), nil
 }
 
@@ -69,7 +69,6 @@ func buildRequestParams(row schema.Row) (string, string, string, error) {
 		return "", "", "", adapter.ErrNoRows
 	}
 
-	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)
 	builder.WriteString(`{`)
 	for i, f := range row.FieldItems {
 		if f.PrimaryKey && docID == "" {
@@ -87,5 +86,10 @@ func buildRequestParams(row schema.Row) (string, string, string, error) {
 	}
 	builder.WriteString(`}`)
 
+	indexName := getIndexName(row)
 	return indexName, docID, builder.String(), nil
+}
+
+func getIndexName(row schema.Row) string {
+	return fmt.Sprintf(`"%s"."%s"`, row.Schema, row.TableName)
 }

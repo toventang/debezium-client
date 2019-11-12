@@ -28,7 +28,10 @@ func ToSQLValue(v string) string {
 		return ""
 	}
 
-	if l >= 8 && v[:4] == `"{\"` && v[len(v)-4:] == `\"}"` {
+	start := v[:4]
+	end := v[len(v)-4:]
+	if (l >= 8 && start == `"{\"` && end == `\"}"`) ||
+		(l >= 8 && start == `"[\"` && end == `\"]"`) {
 		// replace json escape character
 		v = strings.ReplaceAll(v, `\"`, `"`)
 	}
