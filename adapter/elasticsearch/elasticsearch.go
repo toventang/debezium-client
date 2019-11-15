@@ -15,7 +15,8 @@ import (
 )
 
 type elasticSearch struct {
-	client *elastic.Client
+	client     *elastic.Client
+	docBuilder DocBuilder
 
 	options adapter.Options
 }
@@ -33,7 +34,9 @@ func NewElasticSearch(opts adapter.Options) (adapter.Connector, error) {
 		return nil, err
 	}
 
-	return elasticSearch{client, opts}, nil
+	docBuilder := NewDocBuilder(opts.FieldMapping)
+
+	return elasticSearch{client, docBuilder, opts}, nil
 }
 
 func (es elasticSearch) Init() error {
@@ -66,7 +69,7 @@ func (es elasticSearch) Create(row schema.Row) error {
 }
 
 func (es elasticSearch) Update(row schema.Row) error {
-	indexName, docID, body, err := buildUpsertScript(row)
+	indexName, docID, body, err := es.docBuilder.BuildUpsertScript(row)
 	if err != nil {
 		return nil
 	}

@@ -39,7 +39,18 @@ docker run --name debeclient -ti debeclient -KAFKA_ADDRESS=192.168.50.199:9092 \
           -KAFKA_GROUPID=cdc.catalogs.subscriber \
           -KAFKA_TOPICS=catalogdbs.public.catalogs,catalogdbs.public.templates \
           -DST_TYPE=elasticsearch -DST_ADDRESS=http://192.168.50.138:9200 -DST_TIMEOUT=5
+          -FIELD_MAPPING={"public.catalogs":{"created_at":"createdAt","updated_at":"updatedAt"}
 ```
+
+**参数说明：**
+KAFKA_ADDRESS 是指 debezium 服务端监听数据更改后写入的 kafka 地址；
+KAFKA_GROUPID 是指消费 kafka 消息的 groupid，必须保证 groupid 是唯一的；
+KAFKA_TOPICS 是指要消费的 kafka topic，多个主题以 "," 分隔，必须与服务端一致。
+
+DST_TYPE 是指目标数据库类型，暂时支持 Elasticsearch、Postgresql；
+DST_ADDRESS 是指目标数据库地址；
+DST_TIMEOUT 表示写入目标数据库的超时设置，默认 5 秒；
+FIELD_MAPPING 是指将源数据库字段名更改为另一名称写入，以 json 格式表示“表和字段”的结构，格式为：{"表名":{"字段1":"字段1映射","字段2":"字段2映射",...},...}。
 
 ## Debezium
 

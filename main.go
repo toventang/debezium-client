@@ -16,6 +16,7 @@ func main() {
 		kafkaAddress, groupID, topics                              string
 		dstType, dstAddress, dstDatabase, dstUsername, dstPassword string
 		timeout                                                    int
+		fieldMapping                                               string
 	)
 
 	flag.StringVar(&kafkaAddress, "KAFKA_ADDRESS", "", "kafka addresses")
@@ -28,6 +29,8 @@ func main() {
 	flag.IntVar(&timeout, "DST_TIMEOUT", 5, "R/W timeout")
 	flag.StringVar(&dstUsername, "DST_USER", "", "user auth")
 	flag.StringVar(&dstPassword, "DST_PASSWORD", "", "user auth")
+
+	flag.StringVar(&fieldMapping, "FIELD_MAPPING", "", "fields mapping")
 	flag.Parse()
 
 	var tables []string
@@ -52,6 +55,7 @@ func main() {
 			Tables:        tables,
 			Username:      dstUsername,
 			Password:      dstPassword,
+			FieldMapping:  fieldMapping,
 		},
 	}
 	cli, err := client.NewClient(opts)

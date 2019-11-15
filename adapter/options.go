@@ -11,6 +11,8 @@ type Options struct {
 	Database           string
 	Username, Password string
 	Tables             []string
+
+	FieldMapping string
 }
 
 type Option func(*Options)
