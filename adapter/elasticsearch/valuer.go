@@ -2,7 +2,6 @@ package elasticsearch
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/toventang/debezium-client/schema"
 )
@@ -13,9 +12,5 @@ func getValue(f schema.FieldItem) string {
 		return ""
 	}
 
-	switch f.Type {
-	case "int64":
-		return fmt.Sprintf(`"%s"`, string(b))
-	}
 	return string(b)
 }
