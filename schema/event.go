@@ -1,7 +1,5 @@
 package schema
 
-import "log"
-
 type ChangeEvent string
 
 const (
@@ -42,7 +40,6 @@ func GetUpdateEventValues(pk FieldItems, m ValueMapping) FieldItems {
 		// Get the value of the modified column and primary key
 		isPK := pk.ContainsKey(k)
 		if v != m.Payload.Before[k] || isPK {
-			log.Println("k: ", k, ", before: ", m.Payload.Before[k], ", after: ", v)
 			for _, f := range fields {
 				if f.Field == k {
 					f.PrimaryKey = isPK
