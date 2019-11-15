@@ -101,7 +101,7 @@ func (es elasticSearch) Update(row schema.Row) error {
 
 func (es elasticSearch) Delete(row schema.Row) error {
 	var docID string
-	indexName := fmt.Sprintf("%s.%s", row.Schema, row.TableName)
+	indexName := getIndexName(row)
 	for _, f := range row.FieldItems {
 		if f.PrimaryKey && docID == "" {
 			docID = fmt.Sprint(f.Value)
