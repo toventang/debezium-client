@@ -1,64 +1,91 @@
-version: '3.7'
+version: "3.7"
+
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
-    container_name: elasticsearch
-    environment:
-      - node.name=es0
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - discovery.type=single-node
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65535
-        hard: 65535
-    ports:
-      - "9200:9200"
-      - "9300:9300"
   zookeeper:
-    container_name: zookeeper
-    image: debezium/zookeeper:latest
+    image: quay.io/debezium/zookeeper:1.9
+    restart: always
     ports:
-     - 2181:2181
-     - 2888:2888
-     - 3888:3888
-     - 8080:8080
-    environment:
-     - SERVER_ID=1
-     - SERVER_COUNT=1
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+    networks:
+      - debezium
+
   kafka:
-    container_name: kafka
-    image: debezium/kafka:latest
+    image: quay.io/debezium/kafka:1.9
+    restart: always
     ports:
-     - 9092:9092
+      - 9092:9092
+    links:
+      - zookeeper
     environment:
-     - ZOOKEEPER_CONNECT=192.168.50.199:2181
-     - HOST_NAME=0.0.0.0
-     - ADVERTISED_HOST_NAME=192.168.50.199
-     - BROKER_ID=1
-  postgres:
-    container_name: postgres
-    image: debezium/example-postgres:latest
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+      - ADVERTISED_HOST_NAME=10.211.55.7
+    networks:
+      - debezium
+
+  kafka-manager:
+    container_name: kafka-manager
+    restart: always
+    image: obsidiandynamics/kafdrop:latest
     ports:
-     - 5432:5432
+      - 9000:9000
     environment:
-     - POSTGRES_USER=postgres
-     - POSTGRES_PASSWORD=postgres
+      #- JVM_OPTS="-Xms32M -Xmx64M"
+      - KAFKA_BROKERCONNECT=kafka:9092
+    links:
+      - kafka
+    networks:
+      - debezium
+
+  # mysql:
+  #   image: quay.io/debezium/example-mysql:1.9
+  #   ports:
+  #     - 3306:3306
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=debezium
+  #     - MYSQL_USER=mysqluser
+  #     - MYSQL_PASSWORD=mysqlpw
+  #   networks:
+  #     - debezium
+
   connect:
-    container_name: debeconn
-    image: debezium/connect:latest
+    image: quay.io/debezium/connect:1.9
+    restart: always
     ports:
-     - 8083:8083
+      - 8083:8083
+    links:
+      - kafka
+      - mysql
     environment:
-     - BOOTSTRAP_SERVERS=192.168.50.199:9092
-     - GROUP_ID=example.inventory
-     - CONFIG_STORAGE_TOPIC=example_inventory_configs
-     - OFFSET_STORAGE_TOPIC=example_inventory_offsets
-     - STATUS_STORAGE_TOPIC=example_inventory_statuses
-volumes:
-  esdata:
+      - BOOTSTRAP_SERVERS=10.211.55.7:9092
+      - GROUP_ID=dbtransfer
+      - CONFIG_STORAGE_TOPIC=dbtransfer_configs
+      - OFFSET_STORAGE_TOPIC=dbtransfer_offsets
+      - STATUS_STORAGE_TOPIC=dbtransfer_statuses
+    networks:
+      - debezium
+  # debezium-ui:
+  #   image: quay.io/debezium/debezium-ui:1.9
+  #   ports:
+  #     - 8080:8080
+  #   links:
+  #     - connect
+  #   environment:
+  #     - KAFKA_CONNECT_URIS=kafka:9092
+  #   networks:
+  #     - debezium
+
+  debezium-client:
+    restart: always
+    build:
+      context: .
+    links:
+      - connect
+    command:
+      - "-c=etc/config.yaml"
+
+networks:
+  debezium:
+    name: debezium
+    driver: bridge

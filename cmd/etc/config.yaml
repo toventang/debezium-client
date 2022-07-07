@@ -1,0 +1,32 @@
+LogConf:
+  Type: file
+  Path: ./log/
+Timeout: 5000 # 5s
+Kafka:
+  Brokers:
+    - 10.211.55.7:9092
+  Group: db.transformer
+  Topics:
+    - dbserver1.product.category # the category table in the product database
+    - dbserver1.product.product
+  MinBytes: 40
+  MaxBytes: 1073741824 # 1M
+Connectors:
+  - Type: elasticsearch
+    DataSource: http://10.211.55.7:9200
+    Tables:
+      - Name: category
+        PrimaryKey: id # unique key
+        FieldMapping:
+          - aa:a1
+      - Name: product
+        PrimaryKey: id
+  - Type: mysql
+    DataSource: root:google@tcp(10.211.55.7:3306)/backup?parseTime=true
+    Tables:
+      - Name: category
+        PrimaryKey: id # unique key
+        FieldMapping: # field mapping, but does not support primary key, like: "{source}:{target}"
+          - aa:a1
+      - Name: product
+        PrimaryKey: id
