@@ -1,9 +1,13 @@
 # 说明
 
-本项目基于 debezium 的 CDC（变更数据捕获）客户端，可支持文档型存储：ElasticSearch、MongoDB 等，关系型数据库：Postgresql、MySQL、SQLServer、Oracle、Cassandra、ClickHouse 等。
+本项目基于 debezium 1.9 开发的 CDC（变更数据捕获）客户端。
+debezium 支持以下数据源：MySQL、MongoDB、PostgreSQL、Oracle、SQL Server、DB2、Cassandra、Vitess。
+本项目已内置以下目标数据库：ElasticSearch、Postgresql、MySQL；
 
-如果你的系统需要备份数据库，或数据库主备复制，那么本项目非常适合。
-如果你的系统需要 CQRS 架构，且允许数据最终一致性，那么你可以使用本项目。
+## 使用前阅读
+
+* 如果你的系统需要备份数据库，或数据库主备复制，那么本项目非常适合。
+* 如果你的系统需要 CQRS 架构，且允许数据最终一致性，那么你可以使用本项目。
 
 如果你不想使用 kafka，可以参看[嵌入式适配器](https://github.com/debezium/debezium/tree/main/debezium-embedded/src/main/java/io/debezium/embedded)
 
