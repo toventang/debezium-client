@@ -3,9 +3,14 @@ package consumer
 import (
 	"context"
 	"io"
+	"net/http"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
 	"github.com/toventang/debezium-client/internal/config"
@@ -16,7 +21,24 @@ import (
 	"github.com/toventang/debezium-client/pkg/schema"
 )
 
+var (
+	processTime = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "dbzc_process_duration_seconds",
+			Help: "Histogram of handling latency of the message consumer that handled by the server.",
+		},
+		[]string{"schema", "table", "action"})
+
+	processTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "dbzc_process_msg_total",
+			Help: "All messages processed total.",
+		},
+		[]string{"schema", "table", "action", "status"})
+)
+
 type Consumer struct {
+	Config     *config.Config
 	logger     zerolog.Logger
 	ctx        context.Context
 	kafka      *kafka.Reader
@@ -25,9 +47,12 @@ type Consumer struct {
 	timeout    int64
 }
 
+type actionFunc func(context.Context, *schema.Row) error
+
 func NewConsumer(ctx context.Context, logger zerolog.Logger, c *config.Config) *Consumer {
 	conn := newConnectors(c.Connectors, logger)
 	return &Consumer{
+		Config:     c,
 		logger:     logger,
 		ctx:        ctx,
 		kafka:      newKafkaReader(c),
@@ -57,10 +82,30 @@ func (c *Consumer) Start() {
 			}
 		}
 	}()
+
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+
+		c.startPrometheusAgent()
+	}()
 }
 
 func (c *Consumer) Stop() error {
 	return c.kafka.Close()
+}
+
+func (c *Consumer) startPrometheusAgent() {
+	if len(c.Config.PrometheusConf.Path) == 0 || len(c.Config.PrometheusConf.Addr) == 0 {
+		return
+	}
+
+	http.Handle(c.Config.PrometheusConf.Path, promhttp.Handler())
+	c.logger.Info().Msgf("Starting prometheus agent at %s", c.Config.PrometheusConf.Addr)
+	if err := http.ListenAndServe(c.Config.PrometheusConf.Addr, nil); err != nil {
+		c.logger.Fatal().Msg(err.Error())
+		os.Exit(1)
+	}
 }
 
 func (c *Consumer) consume(msg kafka.Message) error {
@@ -77,41 +122,50 @@ func (c *Consumer) consume(msg kafka.Message) error {
 	switch evt.Payload.Op {
 	case schema.CREATE:
 		for i := range c.connectors {
-			row, err := c.connectors[i].GetRowsFromEvent(evt)
-			if err != nil {
-				c.logger.Error().Msg(err.Error())
-				continue
-			}
-
-			err = c.connectors[i].Insert(ctx, row)
-			if err != nil {
+			if err := c.handle(ctx, c.connectors[i], "insert", evt, func(ctx context.Context, row *schema.Row) error {
+				return c.connectors[i].Insert(ctx, row)
+			}); err != nil {
 				c.logger.Error().Msg(err.Error())
 			}
 		}
 	case schema.UPDATE:
 		for i := range c.connectors {
-			row, err := c.connectors[i].GetRowsFromEvent(evt)
-			if err != nil {
-				c.logger.Error().Msg(err.Error())
-				continue
-			}
-
-			err = c.connectors[i].Update(ctx, row)
-			if err != nil {
+			if err := c.handle(ctx, c.connectors[i], "update", evt, func(ctx context.Context, row *schema.Row) error {
+				return c.connectors[i].Update(ctx, row)
+			}); err != nil {
 				c.logger.Error().Msg(err.Error())
 			}
 		}
 	case schema.DELETE:
 		for i := range c.connectors {
-			row, err := c.connectors[i].GetRowsFromEvent(evt)
-			if err != nil {
+			if err := c.handle(ctx, c.connectors[i], "delete", evt, func(ctx context.Context, row *schema.Row) error {
+				return c.connectors[i].Delete(ctx, row)
+			}); err != nil {
 				c.logger.Error().Msg(err.Error())
-				continue
 			}
-
-			c.connectors[i].Delete(ctx, row)
 		}
 	}
+
+	return nil
+}
+
+func (c *Consumer) handle(ctx context.Context, connector connector.Connector, action string, evt *schema.ChangedEvent, fn actionFunc) error {
+	timer := prometheus.NewTimer(prometheus.ObserverFunc(func(v float64) {
+		processTime.WithLabelValues(evt.Payload.Source.DB, evt.Payload.Source.Table, action).Observe(v)
+	}))
+	defer timer.ObserveDuration()
+
+	row, err := connector.GetRowsFromEvent(evt)
+	if err != nil {
+		return err
+	}
+
+	err = fn(ctx, row)
+	if err != nil {
+		processTotal.WithLabelValues(evt.Payload.Source.DB, evt.Payload.Source.Table, action, "fail").Inc()
+		return err
+	}
+	processTotal.WithLabelValues(evt.Payload.Source.DB, evt.Payload.Source.Table, action, "ok").Inc()
 
 	return nil
 }

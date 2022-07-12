@@ -12,6 +12,8 @@ type (
 		Kafka      KafkaConf       `yaml:"Kafka"`
 		Connectors []ConnectorConf `yaml:"Connectors"`
 		Timeout    int64           `yaml:"Timeout"`
+
+		PrometheusConf PrometheusConfig `yaml:"PrometheusConf"`
 	}
 
 	LogConf struct {
@@ -37,6 +39,11 @@ type (
 		Name         string   `yaml:"Name"`
 		PrimaryKey   string   `yaml:"PrimaryKey"`
 		FieldMapping []string `yaml:"FieldMapping"`
+	}
+
+	PrometheusConfig struct {
+		Path string `yaml:"Path"`
+		Addr string `yaml:"Addr"`
 	}
 )
 

@@ -2,6 +2,9 @@ LogConf:
   Type: file
   Path: ./log/
 Timeout: 5000 # 5s
+PrometheusConf:
+  Path: /metrics
+  Addr: :18080
 Kafka:
   Brokers:
     - 10.211.55.7:9092

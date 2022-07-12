@@ -41,6 +41,12 @@ make OS=linux build && make image
 docker run --name debeclient --rm debeclient
 ```
 
+## Prometheus 指标
+
+1. 消费成功的消息数量
+2. 消费失败的消息数量
+3. 每个消息的处理时间
+
 ## Debezium
 
 有关订阅的 GroupID、Topic 或更多设置，可以查看[官方文档](https://debezium.io/documentation/reference/1.9/connectors/index.html)
