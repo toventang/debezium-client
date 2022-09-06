@@ -760,7 +760,6 @@ var (
 				   "field": "parent_id"
 				},
 				{
-					"name": "io.debezium.time.Timestamp",
 					"type": "int32",
 					"optional": false,
 				    "default": 0,
