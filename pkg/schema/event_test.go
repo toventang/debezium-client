@@ -760,11 +760,10 @@ var (
 				   "field": "parent_id"
 				},
 				{
-					"type": "int64",
+					"type": "int32",
 					"optional": false,
-					"name": "io.debezium.time.Timestamp",
-				   "default": 0,
-				   "field": "created_at"
+				    "default": 0,
+				    "field": "created_at"
 				}
 			 ],
 			 "optional": true,
