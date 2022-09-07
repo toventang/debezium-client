@@ -760,10 +760,10 @@ var (
 				   "field": "parent_id"
 				},
 				{
-				   "type": "int32",
-				   "optional": false,
-				   "default": 0,
-				   "field": "created_at"
+					"type": "int32",
+					"optional": false,
+				    "default": 0,
+				    "field": "created_at"
 				}
 			 ],
 			 "optional": true,

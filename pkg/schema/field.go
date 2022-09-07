@@ -16,6 +16,7 @@ type FieldPayload struct {
 }
 
 type Field struct {
+	Name       string
 	Type       string
 	Optional   bool
 	Field      string
